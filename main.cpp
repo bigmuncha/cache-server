@@ -4,20 +4,33 @@
 #include <typeindex>
 #include <iomanip>
 #include "hash_table.hpp"
+#include <boost/asio.hpp>
+
+node **table = (node **) malloc(1024*1024);
+
+using boost::asio::ip::tcp;
 
 int main(int argc, char *argv[]) {
 
 
     try {
-        std::cout <<"OMAR";
-        //node *arr[5]= {0};
-        node **arr = (node **) malloc(1024*1024);
-        node marr[20];
-        //arr = marr;
-        set(arr, (char *)"omar");
+        //std::cout <<"OMAR";
 
-      std::cout << lookup(arr, (char *)"omar");
-        std::cout <<get(arr,(char *)"omar");
+        boost::asio::io_context io_context;
+
+        tcp::socket MasterSocket(io_context);
+
+        tcp::endpoint end(tcp::v4(), 8080);
+
+        tcp::acceptor accept_(io_context, end);
+        accept_.accept(MasterSocket);
+
+        char request[12];
+        MasterSocket.read_some(boost::asio::buffer(request));
+        std::cout <<request;
+
+
+
 
     } catch (std::exception& e) {
         std::cerr << "Exception " << e.what() <<std::endl;

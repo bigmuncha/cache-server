@@ -8,7 +8,7 @@
 #include <iostream>
 #include <iomanip>
 
-#define TABLESIZE 5
+#define TABLESIZE 100
 
  struct node
 {
