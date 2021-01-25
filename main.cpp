@@ -34,14 +34,30 @@ int main(int argc, char *argv[]) {
 
         char buf[128];
 
-        recv(clientsocket,&buf,sizeof(buf), MSG_NOSIGNAL);
+        for(int i =0; i < 10; i++){
+            recv(clientsocket,&buf,sizeof(buf), MSG_NOSIGNAL);
+            std::vector<std::string> out = request_parse(buf);
+            for(auto a:out){
+                std::cout <<a << " ";
+            }std::cout <<"\n";
 
-        std::vector<std::string> out = request_parse(buf);
-
-        for(auto a:out){
-            std::cout <<a << " ";
+            if(out[0] == "get"){
+                 char* ret;
+                 ret = get(table, out[1].c_str());
+                 send(clientsocket,ret,sizeof(ret),MSG_NOSIGNAL);
+            }else if(out[0] == "set"){
+                std::string ret;
+                if(set(table,out[1].c_str(),out[2].c_str())){
+                    ret = "OK" + out[1] + out[2];
+                }else{
+                    ret ="ERROR";
+                }
+                const char *sset;
+                sset = ret.c_str();
+                send(clientsocket,sset,
+                     sizeof(sset),MSG_NOSIGNAL);
+            }
         }
-
         close(MasterSocket);
         close(clientsocket);
 

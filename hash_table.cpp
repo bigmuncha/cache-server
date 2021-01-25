@@ -19,7 +19,7 @@ unsigned int hash(const char *str, int tablesize)
     return it != NULL;
 }
 
-int set(node **table, char *key, char *data)
+int set(node **table, const char *key,const char *data)
 {
     if( !lookup(table, key) )
     {
@@ -45,7 +45,7 @@ int set(node **table, char *key, char *data)
     return 0;
 }
 
-char* get(node **table, char* key){
+char* get(node **table,const char* key){
     if(lookup(table, key)){
         unsigned index = hash(key, TABLESIZE);
         const node *it = table[index];
@@ -58,7 +58,7 @@ char* get(node **table, char* key){
         return it->data;
 
     }
-    return NULL;
+    return (char *)"CANNOT GET VALUE";
 }
 
 
