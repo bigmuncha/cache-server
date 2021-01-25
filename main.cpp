@@ -27,7 +27,7 @@ int main(int argc, char *argv[]) {
 
         char request[12];
         MasterSocket.read_some(boost::asio::buffer(request));
-        std::cout <<request;
+
 
 
 
