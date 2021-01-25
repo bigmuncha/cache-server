@@ -5,6 +5,8 @@
 #include <iomanip>
 #include "hash_table.hpp"
 #include <boost/asio.hpp>
+#include <sys/socket.h>
+#include <sys/types.h>
 #include "req_parse.hpp"
 
 node **table = (node **) malloc(1024*1024);
@@ -17,27 +19,31 @@ int main(int argc, char *argv[]) {
     try {
         //std::cout <<"OMAR";
 
-        boost::asio::io_context io_context;
+        int MasterSocket;
+        MasterSocket = socket(AF_INET, SOCK_STREAM,0);
 
-        tcp::socket MasterSocket(io_context);
+        struct sockaddr_in servaddr;
+        servaddr.sin_family =AF_INET;
+        servaddr.sin_port = htons(9000);
+        servaddr.sin_addr.s_addr = INADDR_ANY;
+        bind(MasterSocket,(struct sockaddr *)&servaddr, sizeof(servaddr));
+        listen(MasterSocket,5);
 
-        tcp::endpoint end(tcp::v4(), 8080);
+        int clientsocket;
+        clientsocket = accept(MasterSocket,NULL, NULL);
 
-        tcp::acceptor accept_(io_context, end);
-        accept_.accept(MasterSocket);
+        char buf[128];
 
-        char request[90];
-        MasterSocket.read_some(boost::asio::buffer(request));
+        recv(clientsocket,&buf,sizeof(buf), MSG_NOSIGNAL);
 
-        std::vector<std::string> out;
-        out = request_parse(request);
+        std::vector<std::string> out = request_parse(buf);
+
         for(auto a:out){
-            std::cout <<a <<' ';
+            std::cout <<a << " ";
         }
 
-        MasterSocket.close();
-
-
+        close(MasterSocket);
+        close(clientsocket);
 
     } catch (std::exception& e) {
         std::cerr << "Exception " << e.what() <<std::endl;
