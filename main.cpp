@@ -5,6 +5,7 @@
 #include <iomanip>
 #include "hash_table.hpp"
 #include <boost/asio.hpp>
+#include "req_parse.hpp"
 
 node **table = (node **) malloc(1024*1024);
 
@@ -25,10 +26,16 @@ int main(int argc, char *argv[]) {
         tcp::acceptor accept_(io_context, end);
         accept_.accept(MasterSocket);
 
-        char request[12];
+        char request[90];
         MasterSocket.read_some(boost::asio::buffer(request));
 
+        std::vector<std::string> out;
+        out = request_parse(request);
+        for(auto a:out){
+            std::cout <<a <<' ';
+        }
 
+        MasterSocket.close();
 
 
 

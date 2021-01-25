@@ -3,7 +3,7 @@
 #include <string>
 #include <boost/regex.hpp>
 
-std::string request_parse(char*);
+std::vector<std::string> request_parse(std::string);
 
 
 #endif // __REQ_PARSE_H_

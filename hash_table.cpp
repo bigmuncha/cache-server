@@ -12,14 +12,14 @@ unsigned int hash(const char *str, int tablesize)
     const node *it = table[index];
 
     // Попытка установить наличие соответствующего ключа в связанном списке
-    while(it != NULL && strcmp(it->data, key) != 0)
+    while(it != NULL && strcmp(it->key, key) != 0)
     {
         it = it->next;
     }
     return it != NULL;
 }
 
-int set(node **table, char *key)
+int set(node **table, char *key, char *data)
 {
     if( !lookup(table, key) )
     {
@@ -29,14 +29,15 @@ int set(node **table, char *key)
 
         if(new_node == NULL)
             return 0;
-
-        new_node->data = (char *)malloc(strlen(key)+1);
+        new_node->key = (char *) malloc(strlen(key)+1);
+        new_node->data = (char *)malloc(strlen(data)+1);
 
         if(new_node->data == NULL)
             return 0;
 
         // Добавление нового ключа и обновление указателя на начало связанного списка
-        strcpy(new_node->data, key);
+        strcpy(new_node->key, key);
+        strcpy(new_node->data, data);
         new_node->next = table[index];
         table[index] = new_node;
         return 1;
@@ -50,7 +51,7 @@ char* get(node **table, char* key){
         const node *it = table[index];
 
         // Попытка установить наличие соответствующего ключа в связанном списке
-        while(it != NULL && strcmp(it->data, key) != 0)
+        while(it != NULL && strcmp(it->key, key) != 0)
         {
             it = it->next;
         }
