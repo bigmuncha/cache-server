@@ -133,15 +133,37 @@ void parent (int sock)
 
 }
 
+void closer(int fd[2]){
+    close(fd[0]);
+    close(fd[1]);
+}
+
 int main(int argc, char *argv[]) {
 
-    int sv[2];
+    int sv1[2];
+    int sv2[2];
+    int sv3[2];
+    int sv4[2];
+
     int pid;
 
-    if(socketpair(AF_LOCAL, SOCK_STREAM, 0, sv) < 0){
-        perror("socketpair");
+    if(socketpair(AF_LOCAL, SOCK_STREAM, 0, sv1) < 0){
+        perror("socketpair 1");
         exit(1);
     }
+    if(socketpair(AF_LOCAL, SOCK_STREAM, 0, sv2) < 0){
+        perror("socketpair 2");
+        exit(1);
+    }
+    if(socketpair(AF_LOCAL, SOCK_STREAM, 0, sv3) < 0){
+        perror("socketpair 3");
+        exit(1);
+    }
+    if(socketpair(AF_LOCAL, SOCK_STREAM, 0, sv4) < 0){
+        perror("socketpair 4");
+        exit(1);
+    }
+
 
     int listenfd, clientfd;
 
@@ -156,11 +178,117 @@ int main(int argc, char *argv[]) {
 
     listen(listenfd, 5);
 
+    pid_t masterProc = getpid();
+    pid_t worker[4];
+
+    for(int i =0; i < 4; i++){
+        if(getpid() == masterProc){
+            worker[i]=fork();
+        }
+    }
+
+    if(getpid() == masterProc){
+        close(sv1[0]);
+        close(sv2[0]);
+        close(sv3[0]);
+        close(sv4[0]);
+        for(int i =0; i < 4; i++)
+            printf("this child N %d\n", worker[i]);
+        //sleep(1);
+        int clientfd;
+        char buf[2] ="is";
+
+        clientfd = accept(listenfd, NULL, NULL);
+        sock_fd_write(sv1[1], buf, 1, clientfd);
+        //close(clientfd);
+
+        clientfd = accept(listenfd, NULL, NULL);
+        sock_fd_write(sv2[1], buf, 2, clientfd);
+        close(clientfd);
+
+        clientfd = accept(listenfd, NULL, NULL);
+        sock_fd_write(sv3[1], buf, 2, clientfd);
+        close(clientfd);
+
+        clientfd = accept(listenfd, NULL, NULL);
+        sock_fd_write(sv4[1], buf, 2, clientfd);
+        close(clientfd);
+
+        printf("Master procces finish\n");
+
+    }
+    sleep(1);
+    printf("this is process %d\n", getpid());
+    if(getpid() == worker[0]){
+        printf("Worker n 1 ");
+        /*closer(sv2);
+        closer(sv3);
+        closer(sv4);*/
+        close(sv1[1]);
+        int client;
+        char buf[2] = "is";
+        sock_fd_read(sv1[0], buf, 2, &client);
+        char message[64];
+
+        recv(client, message, sizeof(message), MSG_NOSIGNAL);
+
+        printf("Child proccess N %d > %s",getpid(), message);
+        close(client);
+    }
+     if(getpid() == worker[1]){
+        printf("Worker n 2 ");
+        /*closer(sv1);
+        closer(sv3);
+        closer(sv4);*/
+        close(sv2[1]);
+        int client;
+        char buf[2] = "is";
+        sock_fd_read(sv2[0], buf, 2, &client);
+        char message[64];
+
+        recv(client, message, sizeof(message), MSG_NOSIGNAL);
+
+        printf("Child proccess N %d > %s",getpid(), message);
+        close(client);
+    }
+     if(getpid() == worker[2]){
+        printf("Worker n 3 ");
+        /*closer(sv2);
+        closer(sv1);
+        closer(sv4);*/
+        close(sv3[1]);
+        int client;
+        char buf[2] = "is";
+        sock_fd_read(sv3[0], buf, 2, &client);
+        char message[64];
+
+        recv(client, message, sizeof(message), MSG_NOSIGNAL);
+
+        printf("Child proccess N %d > %s",getpid(), message);
+        close(client);
+    }
+     if(getpid() == worker[3]){
+        printf("Worker n 4 ");
+        /*closer(sv2);
+        closer(sv3);
+        closer(sv1);*/
+        close(sv4[1]);
+        int client;
+        char buf[2] = "is";
+        sock_fd_read(sv4[0], buf, 2, &client);
+        char message[64];
+
+        recv(client, message, sizeof(message), MSG_NOSIGNAL);
+
+        printf("Child proccess N %d > %s",getpid(), message);
+        close(client);
+    }
+
     //clientfd = accept(listenfd, NULL, NULL);
     //char buf[64];
 
     //recv(clientfd,buf,sizeof(buf),MSG_NOSIGNAL );
-
+/*
     pid_t masterproc = getpid();
     for(int i =0; i < 4; i++){
         if(masterproc == getpid()){
@@ -189,6 +317,6 @@ int main(int argc, char *argv[]) {
         }
         printf("CLOSE SERVER\n");
     }
-
+*/
     return 0;
 }
