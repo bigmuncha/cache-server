@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <netinet/in.h>
 
 ssize_t sock_fd_write(int sock, void *buf, ssize_t buflen, int fd)
 {
@@ -33,7 +34,7 @@ ssize_t sock_fd_write(int sock, void *buf, ssize_t buflen, int fd)
         cmsg->cmsg_level = SOL_SOCKET;
         cmsg->cmsg_type = SCM_RIGHTS;
 
-        printf("passing fd %d\n", fd);
+        //printf("passing fd %d\n", fd);
         *((int *) CMSG_DATA(cmsg)) = fd;
     } else {
         msg.msg_control = NULL;
@@ -88,7 +89,7 @@ sock_fd_read(int sock, void *buf, ssize_t bufsize, int *fd)
             }
 
             *fd = *((int *) CMSG_DATA(cmsg));
-            printf ("received fd %d\n", *fd);
+           // printf ("received fd %d\n", *fd);
         } else {
             *fd = -1;
         }
@@ -141,19 +142,48 @@ int main(int argc, char *argv[]) {
         perror("socketpair");
         exit(1);
     }
-    switch ((pid = fork())){
-        case 0:
-            close (sv[0]);
-            child (sv[1]);
-            break;
-        case -1:
-            perror("fork");
-            exit(1);
-        default:
-            close(sv[1]);
-            parent(sv[0]);
-            break;
 
+    int listenfd, clientfd;
+
+    struct sockaddr_in serv;
+    serv.sin_family = AF_INET;
+    serv.sin_port = htons(9000);
+    serv.sin_addr.s_addr = INADDR_ANY;
+
+    listenfd = socket(AF_INET, SOCK_STREAM, 0);
+
+    bind(listenfd, (struct sockaddr *)&serv, sizeof(serv));
+
+    listen(listenfd, 5);
+
+    //clientfd = accept(listenfd, NULL, NULL);
+    //char buf[64];
+
+    //recv(clientfd,buf,sizeof(buf),MSG_NOSIGNAL );
+    pid = fork();
+
+    if(pid == 0){
+        close(sv[1]);
+        int client;
+        char buf[2] = "is";
+        sock_fd_read(sv[0], buf, 2, &client);
+
+        char message[64];
+        recv(client, message, sizeof(message), MSG_NOSIGNAL);
+
+        printf("Child proccess > %s", message);
+        close(client);
+
+    } else {
+        close(sv[0]);
+        clientfd = accept(listenfd, NULL, NULL);
+        char buf[2] ="is";
+        sock_fd_write(sv[1], buf, 2, clientfd);
+        close(clientfd);
     }
+
+
+
+
     return 0;
 }
