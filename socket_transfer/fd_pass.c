@@ -160,30 +160,35 @@ int main(int argc, char *argv[]) {
     //char buf[64];
 
     //recv(clientfd,buf,sizeof(buf),MSG_NOSIGNAL );
-    pid = fork();
 
-    if(pid == 0){
-        close(sv[1]);
-        int client;
-        char buf[2] = "is";
-        sock_fd_read(sv[0], buf, 2, &client);
+    pid_t masterproc = getpid();
+    for(int i =0; i < 4; i++){
+        if(masterproc == getpid()){
+            if(!fork()){
+                close(sv[1]);
+                int client;
+                char buf[2] = "is";
+                sock_fd_read(sv[0], buf, 2, &client);
+                char message[64];
 
-        char message[64];
-        recv(client, message, sizeof(message), MSG_NOSIGNAL);
+                recv(client, message, sizeof(message), MSG_NOSIGNAL);
 
-        printf("Child proccess > %s", message);
-        close(client);
-
-    } else {
-        close(sv[0]);
-        clientfd = accept(listenfd, NULL, NULL);
-        char buf[2] ="is";
-        sock_fd_write(sv[1], buf, 2, clientfd);
-        close(clientfd);
+                printf("Child proccess N %d > %s",getpid(), message);
+                close(client);
+            }
+        }
     }
 
-
-
+    if(masterproc){
+        close(sv[0]);
+        for(int i =0; i < 4; i++){
+            clientfd = accept(listenfd, NULL, NULL);
+            char buf[2] ="is";
+            sock_fd_write(sv[1], buf, 2, clientfd);
+            close(clientfd);
+        }
+        printf("CLOSE SERVER\n");
+    }
 
     return 0;
 }
