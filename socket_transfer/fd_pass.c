@@ -1,9 +1,13 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <errno.h>
+
+#include <sys/mman.h>
+#include <string.h>
+
 #include <sys/socket.h>
 #include <sys/types.h>
-#include <unistd.h>
-#include <stdio.h>
-#include <errno.h>
-#include <stdlib.h>
 #include <netinet/in.h>
 
 ssize_t sock_fd_write(int sock, void *buf, ssize_t buflen, int fd)
@@ -138,14 +142,18 @@ void closer(int fd[2]){
     close(fd[1]);
 }
 
+#define MAX_PIDS 5
+
 int main(int argc, char *argv[]) {
+
+
 
     int sv1[2];
     int sv2[2];
     int sv3[2];
     int sv4[2];
 
-    int pid;
+
 
     if(socketpair(AF_LOCAL, SOCK_STREAM, 0, sv1) < 0){
         perror("socketpair 1");
@@ -165,27 +173,37 @@ int main(int argc, char *argv[]) {
     }
 
 
-    int listenfd, clientfd;
-
-    struct sockaddr_in serv;
-    serv.sin_family = AF_INET;
-    serv.sin_port = htons(9000);
-    serv.sin_addr.s_addr = INADDR_ANY;
-
-    listenfd = socket(AF_INET, SOCK_STREAM, 0);
-
-    bind(listenfd, (struct sockaddr *)&serv, sizeof(serv));
-
-    listen(listenfd, 5);
+    int pid;
 
     pid_t masterProc = getpid();
-    pid_t worker[4];
 
-    for(int i =0; i < 4; i++){
+    pid_t *worker;
+
+    worker = mmap(0, MAX_PIDS*sizeof(pid_t), PROT_READ|PROT_WRITE,
+                MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+
+    if(!worker){
+        perror("mmap failed");
+        exit(1);
+    }
+    memset((void *)worker, 0, MAX_PIDS*sizeof(pid_t));
+
+    for(int i =0; i<4; i++){
         if(getpid() == masterProc){
-            worker[i]=fork();
+            pid = fork();
+            if(pid == 0){
+                continue;
+                //exit(0);
+            }else if(pid < 0){
+                perror("fork failed");
+            }else{
+                worker[i] = pid;
+                sleep(1);
+            }
         }
     }
+
+
 
     if(getpid() == masterProc){
         close(sv1[0]);
@@ -195,12 +213,25 @@ int main(int argc, char *argv[]) {
         for(int i =0; i < 4; i++)
             printf("this child N %d\n", worker[i]);
         //sleep(1);
-        int clientfd;
+
+        int listenfd, clientfd;
+
+        struct sockaddr_in serv;
+        serv.sin_family = AF_INET;
+        serv.sin_port = htons(9000);
+        serv.sin_addr.s_addr = INADDR_ANY;
+
+        listenfd = socket(AF_INET, SOCK_STREAM, 0);
+
+        bind(listenfd, (struct sockaddr *)&serv, sizeof(serv));
+
+        listen(listenfd, 5);
+
         char buf[2] ="is";
 
         clientfd = accept(listenfd, NULL, NULL);
-        sock_fd_write(sv1[1], buf, 1, clientfd);
-        //close(clientfd);
+        sock_fd_write(sv1[1], buf, 2, clientfd);
+        close(clientfd);
 
         clientfd = accept(listenfd, NULL, NULL);
         sock_fd_write(sv2[1], buf, 2, clientfd);
@@ -218,12 +249,12 @@ int main(int argc, char *argv[]) {
 
     }
     sleep(1);
-    printf("this is process %d\n", getpid());
+    //printf("this is process %d\n", getpid());
     if(getpid() == worker[0]){
         printf("Worker n 1 ");
-        /*closer(sv2);
+        closer(sv2);
         closer(sv3);
-        closer(sv4);*/
+        closer(sv4);
         close(sv1[1]);
         int client;
         char buf[2] = "is";
@@ -237,9 +268,9 @@ int main(int argc, char *argv[]) {
     }
      if(getpid() == worker[1]){
         printf("Worker n 2 ");
-        /*closer(sv1);
+        closer(sv1);
         closer(sv3);
-        closer(sv4);*/
+        closer(sv4);
         close(sv2[1]);
         int client;
         char buf[2] = "is";
@@ -253,9 +284,9 @@ int main(int argc, char *argv[]) {
     }
      if(getpid() == worker[2]){
         printf("Worker n 3 ");
-        /*closer(sv2);
+        closer(sv2);
         closer(sv1);
-        closer(sv4);*/
+        closer(sv4);
         close(sv3[1]);
         int client;
         char buf[2] = "is";
@@ -269,9 +300,9 @@ int main(int argc, char *argv[]) {
     }
      if(getpid() == worker[3]){
         printf("Worker n 4 ");
-        /*closer(sv2);
+        closer(sv2);
         closer(sv3);
-        closer(sv1);*/
+        closer(sv1);
         close(sv4[1]);
         int client;
         char buf[2] = "is";
