@@ -8,7 +8,8 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include "req_parse.hpp"
-
+#include "set_nonblock.h"
+#include "fd_pass.h"
 node **table = (node **) malloc(1024*1024);
 
 using boost::asio::ip::tcp;
@@ -22,6 +23,7 @@ int main(int argc, char *argv[]) {
         int MasterSocket;
         MasterSocket = socket(AF_INET, SOCK_STREAM,0);
 
+        set_nonblock(MasterSocket);
         struct sockaddr_in servaddr;
         servaddr.sin_family =AF_INET;
         servaddr.sin_port = htons(9000);

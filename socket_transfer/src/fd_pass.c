@@ -1,9 +1,4 @@
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <stdio.h>
-#include <errno.h>
-#include <stdlib.h>
+#include "fd_pass.h"
 
 ssize_t sock_fd_write(int sock, void *buf, ssize_t buflen, int fd)
 {
