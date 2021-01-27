@@ -3,13 +3,14 @@
 #include <unistd.h>
 #include <typeindex>
 #include <iomanip>
-#include "hash_table.hpp"
+#include "hash_table/hash_table.hpp"
 #include <boost/asio.hpp>
 #include <sys/socket.h>
 #include <sys/types.h>
-#include "req_parse.hpp"
-#include "set_nonblock.h"
-#include "fd_pass.h"
+#include "req_parse/req_parse.hpp"
+#include "socket_transfer/set_nonblock.h"
+#include "socket_transfer/fd_pass.h"
+
 node **table = (node **) malloc(1024*1024);
 
 using boost::asio::ip::tcp;

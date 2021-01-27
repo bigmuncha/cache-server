@@ -1,3 +1,5 @@
+#ifndef __HASH_TABLE_H_
+#define __HASH_TABLE_H_
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -28,3 +30,5 @@ int lookup(node **table, const char *key);
 int set(node **table,const char *key, const char *data);
 
 char* get(node **table, const char*key);
+
+#endif
