@@ -1,5 +1,4 @@
-#include <unistd.h>
-#include <fcntl.h>
+#include "set_nonblock.h"
 
 int set_nonblock(int fd)
 {
