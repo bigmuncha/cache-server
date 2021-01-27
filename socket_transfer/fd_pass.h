@@ -10,6 +10,6 @@
 
 ssize_t sock_fd_write(int, void *, ssize_t, int);
 ssize_t sock_fd_read(int, void *, ssize_t, int*);
-
+void closer(int fd[2]);
 
 #endif // __FD_PASS_H_

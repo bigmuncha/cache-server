@@ -96,3 +96,8 @@ sock_fd_read(int sock, void *buf, ssize_t bufsize, int *fd)
     }
     return size;
 }
+
+void closer(int fd[2]){
+    close(fd[0]);
+    close(fd[1]);
+}
