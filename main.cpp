@@ -10,6 +10,7 @@
 #include <string.h>
 #include <errno.h>
 #include <netinet/in.h>
+#include <signal.h>
 
 #include <vector>
 
@@ -18,13 +19,7 @@
 #include "hash_table/hash_table.hpp"
 #include "req_parse/req_parse.hpp"
 
-//node **table = (node **) malloc(1024*1024);
 
-/*
-node **table = (node **)mmap(0, 1024*1024,
-                          PROT_READ|PROT_WRITE,
-                MAP_SHARED | MAP_ANONYMOUS, -1, 0);
-*/
 #define MAX_PIDS 4
 
 void workercloser(int i, int** sv){
@@ -52,22 +47,27 @@ int main(int argc, char *argv[]) {
 
     try{
 
+        /*
         int filefd;
         if((filefd = shm_open("/temp.shm", O_CREAT|O_RDWR, 0666)) <0){
             perror("shm_open");
             exit(1);
         }
+        //signal(SIGABRT,SIG_AA)
         if(ftruncate(filefd,1024*1024) < 0){
             perror("ftruncate");
             exit(1);
         }
 
         node **table;
-        table = (node **)mmap(0,1024*1024,PROT_WRITE,MAP_SHARED,filefd,0);
+        table = (node **)mmap(0,1024*1024,PROT_READ|PROT_WRITE,
+                              MAP_SHARED|MAP_ANONYMOUS,filefd,0);
         if(table == MAP_FAILED){
             perror("mmap");
             exit(1);
-        }
+        }*/
+
+        node **table = (node **) malloc(1024*1024);
 
         int **sv = new int*[4];
         for(int i=0; i<4;i++){
@@ -138,15 +138,13 @@ int main(int argc, char *argv[]) {
 
         listen(listenfd, 5);
 
-        char* mesage;
-        mesage =(char *)"ss";
+        char mesage[1] ={'a'};
 
 
         while(true){
             for(int i = 0; i < 4 ; i++){
                 clientfd = accept(listenfd,NULL,NULL);
                 sock_fd_write(sv[i][1], mesage, 2, clientfd);
-                //shutdown(clientfd, SHUT_RDWR);
                 close(clientfd);
                 //reload session
             }
@@ -158,32 +156,32 @@ int main(int argc, char *argv[]) {
     else{
         for(int i =0; i <4; i++){
             if(getpid() == worker[i]){
-
-
                 std::cout << "Work child N " <<getpid() <<'\n';
                 workercloser(i, sv);
                 close(sv[i][1]);
 
                 int clientfd;
-                char buf[2] = {'a', 'b'};
+                char buf[1] = {'a'};
 
                 for(;;){
-                sock_fd_read(sv[i][0], buf, 2, &clientfd);
+                sock_fd_read(sv[i][0], buf, 1, &clientfd);
 
                 char message[64];
                 recv(clientfd, message, sizeof(message),
                      MSG_NOSIGNAL);
 
+                std::cout <<"YA PRINAL\n";
+                std::cout << "Child proccess N " <<getpid() << " > "
+                          << message <<'\n';
+
                 std::vector<std::string> request = request_parse(message);
-
                 std::string result_str;
-
                 result_str = result_message(table, request);
+
 
                 std::cout << "RESULT VALUE " <<result_str << '\n';
                 send(clientfd, result_str.c_str(), result_str.length(), MSG_NOSIGNAL);
-                std::cout << "Child proccess N " <<getpid() << " > "
-                          << message <<'\n';
+
                 shutdown(clientfd, SHUT_RDWR);
                 close(clientfd);
                 //reload session
