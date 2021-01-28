@@ -33,6 +33,6 @@ add_executable (cache_serv ${SOURCE_EXE} ${fd_pass_includes}
   ${fd_pass_src} ${hash_table_includes} ${hash_table_src}
   ${req_parse_includes} ${req_parse_src} ${nonblock_includes} ${nonblock_src})
 
-add_definitions(${MYCOMPILE_FLAGS})
-target_link_libraries(cache_serv  ${Boost_LIBRARIES} )
+
+target_link_libraries(cache_serv  ${Boost_LIBRARIES} rt )
 endif()
