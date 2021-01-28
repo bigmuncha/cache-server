@@ -96,8 +96,8 @@ int main(int argc, char *argv[]) {
             close(sv[i][0]);
         }
 
-        for(int i =0; i < 4; i++)
-            printf("this child N %d\n", worker[i]);
+        //for(int i =0; i < 4; i++)
+          //  printf("this child N %d\n", worker[i]);
 
         int listenfd, clientfd;
 
@@ -115,50 +115,27 @@ int main(int argc, char *argv[]) {
         char* mesage;
         mesage =(char *)"ss";
 
-        //for(int i=0;i<4;i++){
+        for(int i=0;i<4;i++){
             clientfd = accept(listenfd,NULL,NULL);
-            sock_fd_write(sv[0][1], mesage, 2, clientfd);
-            //sock_fd_write(sv[i][1], mesage, 2, clientfd);
+            sock_fd_write(sv[i][1], mesage, 2, clientfd);
             close(clientfd);
-        //}
+        }
 
     }
-    if(getpid() == worker[0]){
-
-        std::cout << "Work child N" <<getpid() <<'\n';
-        workercloser(0, sv);
-        close(sv[0][1]);
-
-        int clientfd;
-        char* buf = (char*)"ss";
-
-        sock_fd_read(sv[0][0], buf, 2, &clientfd);
-
-        char message[64];
-        recv(clientfd, message, sizeof(message),
-             MSG_NOSIGNAL);
-
-        std::cout << "Child proccess N " <<getpid()
-                  << message <<'\n';
-        close(clientfd);
-    }
 
 
-    //children proccess treatment
+
+
     else{
-
-
-
-        /*
         for(int i =0; i < 4; i++){
             if(getpid() == worker[i]){
 
-                std::cout << "Work child N" <<getpid() <<'\n';
+                std::cout << "Work child N " <<getpid() <<'\n';
                 workercloser(i, sv);
                 close(sv[i][1]);
 
                 int clientfd;
-                char* buf = (char*)"ss";
+                char buf[2] = {'a', 'b'};
 
                 sock_fd_read(sv[i][0], buf, 2, &clientfd);
 
@@ -166,12 +143,11 @@ int main(int argc, char *argv[]) {
                 recv(clientfd, message, sizeof(message),
                      MSG_NOSIGNAL);
 
-                std::cout << "Child proccess N " <<getpid()
+                std::cout << "Child proccess N " <<getpid() << " > "
                           << message <<'\n';
                 close(clientfd);
             }
         }
-        */
     }
 
 
