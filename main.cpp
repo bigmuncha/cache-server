@@ -2,6 +2,10 @@
 #include <typeindex>
 #include <iomanip>
 
+#include <stdio.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/stat.h>
 #include <sys/mman.h>
 #include <string.h>
 #include <errno.h>
@@ -14,8 +18,13 @@
 #include "hash_table/hash_table.hpp"
 #include "req_parse/req_parse.hpp"
 
-node **table = (node **) malloc(1024*1024);
+//node **table = (node **) malloc(1024*1024);
 
+/*
+node **table = (node **)mmap(0, 1024*1024,
+                          PROT_READ|PROT_WRITE,
+                MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+*/
 #define MAX_PIDS 4
 
 void workercloser(int i, int** sv){
@@ -42,6 +51,23 @@ int main(int argc, char *argv[]) {
 
 
     try{
+
+        int filefd;
+        if((filefd = shm_open("/temp.shm", O_CREAT|O_RDWR, 0666)) <0){
+            perror("shm_open");
+            exit(1);
+        }
+        if(ftruncate(filefd,1024*1024) < 0){
+            perror("ftruncate");
+            exit(1);
+        }
+
+        node **table;
+        table = (node **)mmap(0,1024*1024,PROT_WRITE,MAP_SHARED,filefd,0);
+        if(table == MAP_FAILED){
+            perror("mmap");
+            exit(1);
+        }
 
         int **sv = new int*[4];
         for(int i=0; i<4;i++){
