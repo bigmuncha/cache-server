@@ -18,16 +18,16 @@ std::vector<std::string> request_parse(std::string request){
 
 }
 
-char* result_message(node **table, std::vector<std::string>& vec ){
+std::string result_message(node **table, std::vector<std::string>& vec ){
 
-    char *result;
+    std::string result;
     if(vec[0] == "get"){
         result = get(table,vec[1].c_str());
     }else if(vec[0] == "set"){
         if(set(table,vec[1].c_str(),vec[2].c_str()) == 0){
-            result = (char *)"Error, can not set this key\n";
+            result = "Error, can not set this key\n";
         }else{
-            result = (char *)"OK, key is a set\n";
+            result = "OK, key is a set\n";
         }
     }
     return result;

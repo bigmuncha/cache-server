@@ -150,14 +150,15 @@ int main(int argc, char *argv[]) {
 
                 std::vector<std::string> request = request_parse(message);
 
-                char* result_str;
+                std::string result_str;
 
                 result_str = result_message(table, request);
 
-                send(clientfd, result_str, sizeof(result_str), MSG_NOSIGNAL);
+                std::cout << "RESULT VALUE " <<result_str << '\n';
+                send(clientfd, result_str.c_str(), result_str.length(), MSG_NOSIGNAL);
                 std::cout << "Child proccess N " <<getpid() << " > "
                           << message <<'\n';
-                //shutdown(clientfd, SHUT_RDWR);
+                shutdown(clientfd, SHUT_RDWR);
                 close(clientfd);
                 //reload session
                 }

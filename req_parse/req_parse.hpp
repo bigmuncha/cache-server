@@ -7,6 +7,6 @@
 
 
 std::vector<std::string> request_parse(std::string);
-char* result_message(node **,std::vector<std::string>&);
+std::string result_message(node **,std::vector<std::string>&);
 
 #endif // __REQ_PARSE_H_
