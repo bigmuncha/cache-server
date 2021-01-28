@@ -10,7 +10,7 @@
 #include <string.h>
 #include <errno.h>
 #include <netinet/in.h>
-#include <signal.h>
+
 
 #include <vector>
 
@@ -18,7 +18,7 @@
 #include "socket_transfer/fd_pass.h"
 #include "hash_table/hash_table.hpp"
 #include "req_parse/req_parse.hpp"
-
+#include "sig_treatment/sig_treatment.h"
 
 #define MAX_PIDS 4
 
@@ -42,14 +42,23 @@ void workercloser(int i, int** sv){
     }
 }
 
+
+
 int main(int argc, char *argv[]) {
 
 
     try{
 
-        /*
+
+        /*signal(SIGABRT,sigHandlerShm);
+        signal(SIGSEGV,sigHandlerShm);
+        signal(SIGTERM,sigHandlerShm);
+        signal(SIGINT,sigHandlerShm);
+        signal(SIGILL,sigHandlerShm);
+        signal(SIGFPE,sigHandlerShm);
+
         int filefd;
-        if((filefd = shm_open("/temp.shm", O_CREAT|O_RDWR, 0666)) <0){
+        if((filefd = shm_open(SHM_NAME, O_CREAT|O_RDWR, 0666)) <0){
             perror("shm_open");
             exit(1);
         }
@@ -58,16 +67,18 @@ int main(int argc, char *argv[]) {
             perror("ftruncate");
             exit(1);
         }
+*/
 
         node **table;
         table = (node **)mmap(0,1024*1024,PROT_READ|PROT_WRITE,
-                              MAP_SHARED|MAP_ANONYMOUS,filefd,0);
+                              MAP_SHARED|MAP_ANONYMOUS,-1,0);
         if(table == MAP_FAILED){
             perror("mmap");
             exit(1);
-        }*/
+        }
 
-        node **table = (node **) malloc(1024*1024);
+        //memset((void *)mmap, 0, 1024*1024);
+        //node **table = (node **) malloc(1024*1024);
 
         int **sv = new int*[4];
         for(int i=0; i<4;i++){
@@ -77,119 +88,124 @@ int main(int argc, char *argv[]) {
     
 
 
-    for(int i =0; i <4; i++){
-        if(socketpair(AF_LOCAL, SOCK_STREAM, 0, sv[i]) < 0){
-            std::cerr <<"socketpair" <<i <<'\n';
+        for(int i =0; i <4; i++){
+            if(socketpair(AF_LOCAL, SOCK_STREAM, 0, sv[i]) < 0){
+                std::cerr <<"socketpair" <<i <<'\n';
+                exit(1);
+            }
+        }
+
+        int pid;
+
+        pid_t masterProc = getpid();
+
+        pid_t *worker;
+
+        worker =(pid_t *)mmap(0, MAX_PIDS*sizeof(pid_t),
+                              PROT_READ|PROT_WRITE,
+                              MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+
+        if(!worker){
+            perror("mmap failed");
             exit(1);
         }
-    }
 
-    int pid;
+        memset((void *)worker, 0, MAX_PIDS*sizeof(pid_t));
 
-    pid_t masterProc = getpid();
-
-    pid_t *worker;
-
-    worker =(pid_t *)mmap(0, MAX_PIDS*sizeof(pid_t),
-                          PROT_READ|PROT_WRITE,
-                MAP_SHARED | MAP_ANONYMOUS, -1, 0);
-
-    if(!worker){
-        perror("mmap failed");
-        exit(1);
-    }
-
-    memset((void *)worker, 0, MAX_PIDS*sizeof(pid_t));
-
-    for(int i =0; i<4; i++){
-        if(getpid() == masterProc){
-            pid = fork();
-            if(pid == 0){
-                continue;
-                //exit(0);
-            }else if(pid < 0){
-                perror("fork failed");
-            }else{
-                worker[i] = pid;
-                sleep(1);
-            }
-        }
-    }
-
-    if(getpid() == masterProc){
-
-        for(int i=0;i < 4; i++){
-            close(sv[i][0]);
-        }
-
-        //for(int i =0; i < 4; i++)
-          //  printf("this child N %d\n", worker[i]);
-
-        int listenfd, clientfd;
-
-        struct sockaddr_in serv;
-        serv.sin_family = AF_INET;
-        serv.sin_port = htons(9000);
-        serv.sin_addr.s_addr = INADDR_ANY;
-
-        listenfd = socket(AF_INET, SOCK_STREAM, 0);
-
-        bind(listenfd, (struct sockaddr *)&serv, sizeof(serv));
-
-        listen(listenfd, 5);
-
-        char mesage[1] ={'a'};
-
-
-        while(true){
-            for(int i = 0; i < 4 ; i++){
-                clientfd = accept(listenfd,NULL,NULL);
-                sock_fd_write(sv[i][1], mesage, 2, clientfd);
-                close(clientfd);
-                //reload session
-            }
-        }
-
-
-    }
-
-    else{
-        for(int i =0; i <4; i++){
-            if(getpid() == worker[i]){
-                std::cout << "Work child N " <<getpid() <<'\n';
-                workercloser(i, sv);
-                close(sv[i][1]);
-
-                int clientfd;
-                char buf[1] = {'a'};
-
-                for(;;){
-                sock_fd_read(sv[i][0], buf, 1, &clientfd);
-
-                char message[64];
-                recv(clientfd, message, sizeof(message),
-                     MSG_NOSIGNAL);
-
-                std::cout <<"YA PRINAL\n";
-                std::cout << "Child proccess N " <<getpid() << " > "
-                          << message <<'\n';
-
-                std::vector<std::string> request = request_parse(message);
-                std::string result_str;
-                result_str = result_message(table, request);
-
-
-                std::cout << "RESULT VALUE " <<result_str << '\n';
-                send(clientfd, result_str.c_str(), result_str.length(), MSG_NOSIGNAL);
-
-                shutdown(clientfd, SHUT_RDWR);
-                close(clientfd);
-                //reload session
+        for(int i =0; i<4; i++){
+            if(getpid() == masterProc){
+                pid = fork();
+                if(pid == 0){
+                    continue;
+                    //exit(0);
+                }else if(pid < 0){
+                    perror("fork failed");
+                }else{
+                    worker[i] = pid;
+                    sleep(1);
                 }
             }
+        }
+
+        if(getpid() == masterProc){
+
+            for(int i=0;i < 4; i++){
+                close(sv[i][0]);
+            }
+
+            //for(int i =0; i < 4; i++)
+            //  printf("this child N %d\n", worker[i]);
+
+            int listenfd, clientfd;
+
+            struct sockaddr_in serv;
+            serv.sin_family = AF_INET;
+            serv.sin_port = htons(9000);
+            serv.sin_addr.s_addr = INADDR_ANY;
+
+            listenfd = socket(AF_INET, SOCK_STREAM, 0);
+
+            bind(listenfd, (struct sockaddr *)&serv, sizeof(serv));
+
+            listen(listenfd, 5);
+
+            char mesage[1] ={'a'};
+
+
+            while(true){
+                for(int i = 0; i < 4 ; i++){
+                    clientfd = accept(listenfd,NULL,NULL);
+                    sock_fd_write(sv[i][1], mesage, 1, clientfd);
+                    close(clientfd);
+                    //reload session
+                }
+            }
+            close(listenfd);
+
 
         }
-    }
+
+        else{
+            for(int i =0; i <4; i++){
+                if(getpid() == worker[i]){
+                    std::cout << "Work child N " <<getpid() <<'\n';
+                    workercloser(i, sv);
+                    close(sv[i][1]);
+
+                    int clientfd;
+
+
+                    for(;;){
+                        char buf[1] = {'a'};
+                        sock_fd_read(sv[i][0], buf, 1, &clientfd);
+
+                        char message[64];
+                        recv(clientfd, message, sizeof(message),
+                             MSG_NOSIGNAL);
+
+                     //   std::cout <<"YA PRINAL\n";
+                        std::cout << "Child proccess N " <<getpid() << " > "
+                                  << message <<'\n';
+
+                        std::vector<std::string> request = request_parse(message);
+                        for(int i=0;i < request.size();i++){
+                            std::cout <<request[i] <<' ';
+                        }std::cout <<"|" <<std::endl;
+                        std::string result_str;
+                        result_str = result_message(table, request);
+
+
+                        std::cout << "RESULT VALUE " <<result_str << '\n';
+                        send(clientfd, result_str.c_str(), result_str.length(), MSG_NOSIGNAL);
+
+                        shutdown(clientfd, SHUT_RDWR);
+                        close(clientfd);
+                        //reload session
+                    }
+                }
+
+            }
+        }
 
 
     }catch(std::exception &e){

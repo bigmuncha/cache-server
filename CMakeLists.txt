@@ -16,6 +16,9 @@ set (fd_pass_src  "./socket_transfer/fd_pass.cc")
 set (nonblock_includes "./socket_transfer/set_nonblock.h")
 set (nonblock_src "./socket_transfer/set_nonblock.cc")
 
+set (signal_includes "./sig_treatment/sig_treatment.h")
+set (signal_src "./sig_treatment/sig_treatment.cc")
+
 set(hash_table_includes "./hash_table/hash_table.hpp")
 set(hash_table_src "./hash_table/hash_table.cpp")
 
@@ -27,11 +30,12 @@ set(req_parse_src "./req_parse/req_parse.cpp")
 
 find_package(Boost REQUIRED COMPONENTS  filesystem thread system regex)
 if(Boost_FOUND)
-  include_directories(${Boost_INCLUDE_DIRS} "./socket_transfer" "./hash_table" "./req_parse")
+  include_directories(${Boost_INCLUDE_DIRS} "./socket_transfer" "./hash_table" "./req_parse" "./sig_treatment")
 
 add_executable (cache_serv ${SOURCE_EXE} ${fd_pass_includes}
   ${fd_pass_src} ${hash_table_includes} ${hash_table_src}
-  ${req_parse_includes} ${req_parse_src} ${nonblock_includes} ${nonblock_src})
+  ${req_parse_includes} ${req_parse_src} ${nonblock_includes}
+  ${nonblock_src} ${signal_includes} ${signal_src})
 
 
 target_link_libraries(cache_serv  ${Boost_LIBRARIES} rt )

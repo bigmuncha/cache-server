@@ -29,6 +29,6 @@ int lookup(node **table, const char *key);
 
 int set(node **table,const char *key, const char *data);
 
-char* get(node **table, const char*key);
+std::string get(node **table, const char*key);
 
 #endif
