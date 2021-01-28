@@ -70,7 +70,6 @@ sock_fd_read(int sock, void *buf, ssize_t bufsize, int *fd)
 
         size = recvmsg(sock, &msg, 0);
         if(size < 0){
-
             perror ("recvmsg");
             exit(1);
         }

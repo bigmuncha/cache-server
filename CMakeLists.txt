@@ -7,6 +7,8 @@ set(SOURCE_EXE main.cpp)
 #set(HASH_TABLE_LIB hash_table.cpp)
 #set(REQUEST_PARSE_LIB req_parse.cpp)
 
+set(CMAKE_CXX_STANDARD 14)
+
 set (fd_pass_includes  "./socket_transfer/fd_pass.h" )
 set (fd_pass_src  "./socket_transfer/fd_pass.cc")
 
@@ -31,5 +33,5 @@ add_executable (cache_serv ${SOURCE_EXE} ${fd_pass_includes}
   ${req_parse_includes} ${req_parse_src} ${nonblock_includes} ${nonblock_src})
 
 
-target_link_libraries(cache_serv  ${Boost_LIBRARIES})
+target_link_libraries(cache_serv  ${Boost_LIBRARIES} )
 endif()

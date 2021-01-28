@@ -115,20 +115,24 @@ int main(int argc, char *argv[]) {
         char* mesage;
         mesage =(char *)"ss";
 
-        for(int i=0;i<4;i++){
-            clientfd = accept(listenfd,NULL,NULL);
-            sock_fd_write(sv[i][1], mesage, 2, clientfd);
-            close(clientfd);
+
+        while(true){
+            for(int i = 0; i < 4 ; i++){
+                clientfd = accept(listenfd,NULL,NULL);
+                sock_fd_write(sv[i][1], mesage, 2, clientfd);
+                //shutdown(clientfd, SHUT_RDWR);
+                close(clientfd);
+                //reload session
+            }
         }
+
 
     }
 
-
-
-
     else{
-        for(int i =0; i < 4; i++){
+        for(int i =0; i <4; i++){
             if(getpid() == worker[i]){
+
 
                 std::cout << "Work child N " <<getpid() <<'\n';
                 workercloser(i, sv);
@@ -137,16 +141,28 @@ int main(int argc, char *argv[]) {
                 int clientfd;
                 char buf[2] = {'a', 'b'};
 
+                for(;;){
                 sock_fd_read(sv[i][0], buf, 2, &clientfd);
 
                 char message[64];
                 recv(clientfd, message, sizeof(message),
                      MSG_NOSIGNAL);
 
+                std::vector<std::string> request = request_parse(message);
+
+                char* result_str;
+
+                result_str = result_message(table, request);
+
+                send(clientfd, result_str, sizeof(result_str), MSG_NOSIGNAL);
                 std::cout << "Child proccess N " <<getpid() << " > "
                           << message <<'\n';
+                //shutdown(clientfd, SHUT_RDWR);
                 close(clientfd);
+                //reload session
+                }
             }
+
         }
     }
 
