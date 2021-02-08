@@ -11,7 +11,7 @@
 #include <errno.h>
 #include <netinet/in.h>
 
-
+#include <unordered_map>
 #include <vector>
 
 #include "socket_transfer/set_nonblock.h"
@@ -19,6 +19,7 @@
 #include "hash_table/hash_table.hpp"
 #include "req_parse/req_parse.hpp"
 #include "sig_treatment/sig_treatment.h"
+#include <sys/wait.h>
 
 #define MAX_PIDS 4
 
@@ -42,7 +43,7 @@ void workercloser(int i, int** sv){
     }
 }
 
-
+#define SIZEMAP 100
 
 int main(int argc, char *argv[]) {
 
@@ -50,41 +51,12 @@ int main(int argc, char *argv[]) {
     try{
 
 
-        /*signal(SIGABRT,sigHandlerShm);
-        signal(SIGSEGV,sigHandlerShm);
-        signal(SIGTERM,sigHandlerShm);
-        signal(SIGINT,sigHandlerShm);
-        signal(SIGILL,sigHandlerShm);
-        signal(SIGFPE,sigHandlerShm);
-
-        int filefd;
-        if((filefd = shm_open(SHM_NAME, O_CREAT|O_RDWR, 0666)) <0){
-            perror("shm_open");
-            exit(1);
-        }
-        //signal(SIGABRT,SIG_AA)
-        if(ftruncate(filefd,1024*1024) < 0){
-            perror("ftruncate");
-            exit(1);
-        }
-*/
-
-        node **table;
-        table = (node **)mmap(0,1024*1024,PROT_READ|PROT_WRITE,
-                              MAP_SHARED|MAP_ANONYMOUS,-1,0);
-        if(table == MAP_FAILED){
-            perror("mmap");
-            exit(1);
-        }
-
-        //memset((void *)mmap, 0, 1024*1024);
-        //node **table = (node **) malloc(1024*1024);
-
         int **sv = new int*[4];
         for(int i=0; i<4;i++){
             sv[i] = new int[2];
         }
 
+        std::unordered_map<std::string, std::string> table;
     
 
 
@@ -161,6 +133,10 @@ int main(int argc, char *argv[]) {
                 }
             }
             close(listenfd);
+            int stat;
+            for(int i=0; i < 4 ; i++){
+                waitpid(worker[i],&stat,0);
+            }
 
 
         }

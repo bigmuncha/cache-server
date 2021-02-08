@@ -18,18 +18,32 @@ std::vector<std::string> request_parse(std::string request){
 
 }
 
-std::string result_message(node **table, std::vector<std::string>& vec ){
-
+std::string result_message(std::unordered_map<std::string, std::string>& table,
+                           std::vector<std::string>& vec ){
     std::string result;
     if(vec[0] == "get"){
-        result = get(table,vec[1].c_str());
-    }else if(vec[0] == "set"){
-        if(set(table,vec[1].c_str(),vec[2].c_str()) == 0){
-            result = "Error, can not set this key\n";
+        if(vec.size()!=2){
+            result = "ERROR WRONG REQUEST\n";
+        }else if (table.find(vec[1]) == table.end() ){
+            result =  "THIS KEY NOT VALID\n";
         }else{
-            result = "OK, key is a set\n";
+            result =  table[vec[1]];
         }
+    }else if(vec[0] == "set"){
+        if(vec.size() != 3){
+            result = "ERROR WRONG REQUEST\n";
+        }else if(table.find(vec[1]) == table.end()){
+            table[vec[1]] = vec[2];
+            result =  "KEY IS SET\n";
+        }else{
+            result =  "CANNOT SET THIS KEY\n";
+        }
+    }else if(vec[0] == "all"){
+        for(auto &a:table){
+            result = result + a.second + ' ';
+        }
+    }else {
+        result =  "ERROR WRONG REQUEST\n";
     }
     return result;
-
 }
